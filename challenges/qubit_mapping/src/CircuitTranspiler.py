@@ -1,6 +1,7 @@
 # We assume non-directed star topology and that the qubit 2 is the center of the star
 from typing import List, Tuple, Dict
 
+import networkx as nx
 from networkx import astar_path
 from qibo import Circuit, models, gates
 
@@ -19,7 +20,7 @@ class CircuitTranspiler:
 
         return optimized_circuit
 
-    def generate_timesteps(self, circuit: models.Circuit) -> List[List[Tuple[str, Tuple[int, int]]]]:
+    def generate_timesteps(self, circuit: models.Circuit) -> List[List[gates.Gate]]:
         """
         Function to determine the timesteps of a given circuit
 
@@ -33,8 +34,8 @@ class CircuitTranspiler:
         circuit_gates: List[gates.Gate] = circuit.queue
 
         # (name, (qubit1, [qubit2]))
-        timesteps: List[List[Tuple[str, Tuple[int, int]]]] = []
-        current_timestep: List[Tuple[str, Tuple[int, int]]] = []
+        timesteps: List[List[gates.Gate]] = []
+        current_timestep: List[gates.Gate] = []
 
         qubits_used_in_current_timestep = []
 
@@ -43,12 +44,12 @@ class CircuitTranspiler:
                 len(gate.qubits) > 1 and gate.qubits[1] in qubits_used_in_current_timestep
             ):
                 timesteps.append(current_timestep.copy())
-                current_timestep = [(gate.name, gate.qubits)]
+                current_timestep = [gate]
                 qubits_used_in_current_timestep = [gate.qubits[0]]
                 if len(gate.qubits) > 1:
                     qubits_used_in_current_timestep.append(gate.qubits[1])
             else:
-                current_timestep.append((gate.name, gate.qubits))
+                current_timestep.append(gate)
                 qubits_used_in_current_timestep.append(gate.qubits[0])
                 if len(gate.qubits) > 1:
                     qubits_used_in_current_timestep.append(gate.qubits[1])
@@ -57,7 +58,7 @@ class CircuitTranspiler:
 
         return timesteps
 
-    def initial_mapping(self, timesteps: List[List[Tuple[str, int, int]]]) -> Dict[int, int]:
+    def initial_mapping(self, timesteps: List[List[gates.Gate]]) -> Dict[int, int]:
         """
         Function to determine the initial mapping of the qubits to the architecture.
 
@@ -74,15 +75,15 @@ class CircuitTranspiler:
         # Generate the graph containing connections from each qubit.
         for step in timesteps:
             for gate in step:
-                if gate[1] in graph and len(graph[gate[1]]) < 2:
-                    graph[gate[1]].append(gate[2])
+                if gate.qubits[0] in graph and len(graph[gate.qubits[0]]) < 2:
+                    graph[gate.qubits[0]].append(gate.qubits[1])
                 else:
-                    graph[gate[1]] = [gate[2]]
+                    graph[gate.qubits[0]] = [gate.qubits[1]]
 
-                if gate[2] in graph and len(graph[gate[2]]) < 2:
-                    graph[gate[2]].append(gate[1])
+                if gate.qubits[1] in graph and len(graph[gate.qubits[1]]) < 2:
+                    graph[gate.qubits[1]].append(gate.qubits[0])
                 else:
-                    graph[gate[2]] = [gate[1]]
+                    graph[gate.qubits[1]] = [gate.qubits[0]]
 
         # Generate the list of qubits
         list_of_qubits = []
@@ -104,7 +105,7 @@ class CircuitTranspiler:
 
         return mapping
 
-    def routing(self, timesteps: List[List[Tuple[int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
+    def routing(self, timesteps: List[List[gates.Gate]], initial_mapping: Dict[int, int]) -> models.Circuit:
         """
         Function that takes as input the timesteps and the initial mapping and outputs the final circuit.
 
@@ -120,33 +121,36 @@ class CircuitTranspiler:
         """
         # (name, (qubit1, qubit2))
         # Run over all timesteps and gates in the timesteps
+        output_circuit = Circuit(len(initial_mapping.keys()))
+        topology_graph = nx.Graph(dict_topology_tolist(STAR_ARCHITECTURE))
+        
         for timestep in timesteps:
             for gate in timestep:
 
                 # If the gate is a single qubit gate, add it to the output circuit following the mapping
-                if len(gate[2]) == 1:
-                    self.output_circuit.add(string_gate(gate[0], self.mapping[gate[1][0]]))
+                if len(gate.qubits) == 1:
+                    output_circuit.add(string_gate(gate.name, initial_mapping[gate.qubits[0]]))
 
                 # If the gate is a two qubit gate, check if the qubits are connected in the topology
-                elif len(gate[2]) == 2:
-                    if (self.mapping[gate[1][0]], self.mapping[gate[1][1]]) in list(self.topology_graph.edges):
-                        self.output_circuit.add(
-                            string_gate(gate[0], (self.mapping[gate[1][0]], self.mapping[gate[1][1]]))
+                elif len(gate.qubits) == 2:
+                    if (initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]]) in list(topology_graph.edges):
+                        output_circuit.add(
+                            string_gate(gate.name, (initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]]))
                         )
                     else:
-                        path = astar_path(self.topology_graph, self.mapping[gate[1][0]], self.mapping[gate[1][1]])
+                        path = astar_path(topology_graph, initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]])
 
                         for i in range(len(path) - 1):
-                            self.output_circuit.add(string_gate("CNOT", (path[i], path[i + 1])))
-                            self.output_circuit.add(string_gate("CNOT", (path[i + 1], path[i])))
-                            self.output_circuit.add(string_gate("CNOT", (path[i], path[i + 1])))
+                            output_circuit.add(string_gate("cx", (path[i], path[i + 1])))
+                            output_circuit.add(string_gate("cx", (path[i + 1], path[i])))
+                            output_circuit.add(string_gate("cx", (path[i], path[i + 1])))
 
-                        self.mapping[gate[2][1]] = gate[2][0]
-                        self.mapping[gate[2][0]] = gate[2][1]
+                        initial_mapping[gate.qubits[1]] = gate.qubits[0]
+                        initial_mapping[gate.qubits[0]] = gate.qubits[1]
 
-                        self.output_circuit.add(string_gate(gate[0], (path[-1], self.mapping[gate[2][0]])))
+                        output_circuit.add(string_gate(gate.name, (path[-1], initial_mapping[gate.qubits[0]])))
 
-        return self.output_circuit
+        return output_circuit
 
     def optimize_circuit(self, circuit: models.Circuit) -> models.Circuit:
         """
@@ -197,7 +201,7 @@ def string_gate(name: str, qubits: int | tuple[int, int]) -> gates.Gate:
     Returns:
         gates.Gate: The qibo Gate object.
     """
-    if name == "cnot":
+    if name == "cx":
         return gates.CNOT(*qubits)
     elif name == "x":
         return gates.X(qubits)
