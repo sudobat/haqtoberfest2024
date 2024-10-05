@@ -22,3 +22,6 @@ class TestCircuitTranspiler(unittest.TestCase):
         c.add(gates.CNOT(0, 3))
 
         self.assertTrue(True)
+
+    def test_initial_mapping(self):
+

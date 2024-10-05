@@ -2,14 +2,18 @@
 from typing import List, Tuple, Dict
 
 import qibo.gates
+from networkx.classes import neighbors
 from qibo import Circuit, models
 
 import GraphUtils
 
-STAR_ARCHITECTURE: List[Tuple] = [
-    (0,1),(0,2),(0,3),(0,4),
-    (1,0),(2,0),(3,0),(4,0)
-]
+STAR_ARCHITECTURE: Dict[int, List[int]] = {
+    0: [1, 2, 3, 4],
+    1: [0],
+    2: [0],
+    3: [0],
+    4: [0]
+}
 
 class CircuitTranspiler:
     def transpile(self, circuit: models.Circuit) -> Circuit:
@@ -82,9 +86,15 @@ class CircuitTranspiler:
             list_of_qubits.append(next_qubit)
             next_qubit = graph[first_qubit][0]
 
-        # Map the list of qubits to the architecture nodes
+        # Create subgraphs from highest degree node
+        subgraphs: List[int] = GraphUtils.get_subgraphs(architecture)
 
-        return {}
+        # Map the list of qubits to the architecture nodes
+        mapping = {}
+        for qubit in list_of_qubits:
+            mapping[qubit] = subgraphs.pop(0)
+
+        return mapping
 
     def routing(timesteps: List[List[Tuple[str, int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
         """
