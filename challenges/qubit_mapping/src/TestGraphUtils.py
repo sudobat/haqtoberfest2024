@@ -1,9 +1,8 @@
 import unittest
-from typing import List, Tuple, Dict
+from typing import List, Dict
 
 from challenges.qubit_mapping.src.GraphUtils import get_highest_degree_node, remove_edge, get_max_degree_neighbor, \
     get_subgraphs
-
 
 class TestCircuitTranspiler(unittest.TestCase):
     def test_get_highest_degree_node(self):
