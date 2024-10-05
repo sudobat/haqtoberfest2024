@@ -6,13 +6,8 @@ from qibo import Circuit, models, gates
 
 import GraphUtils
 
-STAR_ARCHITECTURE: Dict[int, List[int]] = {
-    0: [1, 2, 3, 4],
-    1: [0],
-    2: [0],
-    3: [0],
-    4: [0]
-}
+STAR_ARCHITECTURE: Dict[int, List[int]] = {0: [1, 2, 3, 4], 1: [0], 2: [0], 3: [0], 4: [0]}
+
 
 class CircuitTranspiler:
 
@@ -44,7 +39,9 @@ class CircuitTranspiler:
         qubits_used_in_current_timestep = []
 
         for gate in circuit_gates:
-            if gate.qubits[0] in qubits_used_in_current_timestep or (len(gate.qubits) > 1 and gate.qubits[1] in qubits_used_in_current_timestep):
+            if gate.qubits[0] in qubits_used_in_current_timestep or (
+                len(gate.qubits) > 1 and gate.qubits[1] in qubits_used_in_current_timestep
+            ):
                 timesteps.append(current_timestep.copy())
                 current_timestep = [(gate.name, gate.qubits)]
                 qubits_used_in_current_timestep = [gate.qubits[0]]
@@ -177,12 +174,11 @@ class CircuitTranspiler:
         for i, gate in enumerate(circ.queue):
             for j in range(i + 1, len(circ.queue)):
                 comp = circ.queue[j]
-                if any(x == y for x, y in zip(gate[1], comp[1])):
-                    if gate == comp:
-                        break
-                    else:
-                        output_circuit.add(gates.CNOT(*gate))
-                        break
+                if gate.name == comp.name and gate.qubits == comp.qubits:
+                    break
+                else:
+                    output_circuit.add(gate)
+                    break
 
         return circuit
 
