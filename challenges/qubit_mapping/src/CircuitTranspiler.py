@@ -1,8 +1,7 @@
 # We assume non-directed star topology and that the qubit 2 is the center of the star
 from typing import List, Tuple, Dict
 
-import qibo.gates
-from qibo import Circuit, models
+from qibo import Circuit, models, gates
 
 import GraphUtils
 
@@ -20,7 +19,7 @@ class CircuitTranspiler:
 
         return optimized_circuit
 
-    def generate_timesteps(self, circuit: models.Circuit) -> List[List[Tuple[str, int, int]]]:
+    def generate_timesteps(self, circuit: models.Circuit) -> List[List[Tuple[str, Tuple[int, int]]]]:
         """
         Function to determine the timesteps of a given circuit
 
@@ -31,21 +30,28 @@ class CircuitTranspiler:
         timesteps (list): list of timesteps with the qubits involved in each timestep
         """
 
-        # (name, qubits) = circuit.queue
+        circuit_gates: List[gates.Gate] = circuit.queue
 
-        # your code here
-        timesteps: List[List[Tuple[str, int, int]]] = [
-            [('cx',2,0), ('cx',3,1)],
-            [('x',0,), ('h',1,)],
-            [('x',1,4), ('cx',0,2), ('h',3,)],
-            [('cx',4,1), ('X',2,)],
-            [('cx',1,3), ('H',0,)],
-            [('cx',0,4), ('cx',2,3)],
-            [('x',4,)],
-            [('cx',4,0), ('cx',1,2)],
-            [('h',0,), ('h',2,), ('cx',3,4)],
-            [('cx',3,2)]
-        ]
+        # (name, (qubit1, [qubit2]))
+        timesteps: List[List[Tuple[str, Tuple[int, int]]]] = []
+        current_timestep: List[Tuple[str, Tuple[int, int]]] = []
+
+        qubits_used_in_current_timestep = []
+
+        for gate in circuit_gates:
+            if gate.qubits[0] in qubits_used_in_current_timestep or (len(gate.qubits) > 1 and gate.qubits[1] in qubits_used_in_current_timestep):
+                timesteps.append(current_timestep.copy())
+                current_timestep = [(gate.name, gate.qubits)]
+                qubits_used_in_current_timestep = [gate.qubits[0]]
+                if len(gate.qubits) > 1:
+                    qubits_used_in_current_timestep.append(gate.qubits[1])
+            else:
+                current_timestep.append((gate.name, gate.qubits))
+                qubits_used_in_current_timestep.append(gate.qubits[0])
+                if len(gate.qubits) > 1:
+                    qubits_used_in_current_timestep.append(gate.qubits[1])
+
+        timesteps.append(current_timestep.copy())
 
         return timesteps
 
