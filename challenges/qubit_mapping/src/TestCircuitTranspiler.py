@@ -1,11 +1,11 @@
 from qibo import gates, models
 import unittest
-from CircuitTranspiler import CircuitTranspiler
+from CircuitTranspiler import CircuitTranspiler, dict_topology_tolist, string_gate
 from typing import List, Dict
+import networkx as nx
 
 
 class TestCircuitTranspiler(unittest.TestCase):
-
     def test_generate_timesteps(self):
         circuit = models.Circuit(5)
         circuit.add(gates.CNOT(2, 0))
@@ -71,6 +71,20 @@ class TestCircuitTranspiler(unittest.TestCase):
 
         self.assertDictEqual(expected_mapping, mapping)
 
+    def test_dict_topology(self):
+        star_architecture: Dict[int, List[int]] = {0: [1, 2, 3, 4], 1: [0], 2: [0], 3: [0], 4: [0]}
+
+        expected_edges = [(0, 2), (1, 2), (2, 3), (2, 4)]
+
+        list_edges = dict_topology_tolist(star_architecture)
+
+        graph = nx.Graph(list_edges)
+
+        outcome_edges = [sorted(edge) for edge in graph.edges]
+
+        for edge in expected_edges:
+            self.assertIn(edge, outcome_edges)
+
     def test_routing(self):
         timesteps = [
             [gates.CNOT(2, 0), gates.CNOT(3, 1)],
@@ -86,3 +100,4 @@ class TestCircuitTranspiler(unittest.TestCase):
         ]
 
         star_architecture: Dict[int, List[int]] = {0: [1, 2, 3, 4], 1: [0], 2: [0], 3: [0], 4: [0]}
+        initial_mapping = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4}
