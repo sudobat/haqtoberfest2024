@@ -21,4 +21,4 @@ class TestCircuitTranspiler(unittest.TestCase):
         c.add(gates.CNOT(3, 2))
         c.add(gates.CNOT(0, 3))
 
-        self.assertTrue(True, "Test passed")
+        self.assertTrue(True)
