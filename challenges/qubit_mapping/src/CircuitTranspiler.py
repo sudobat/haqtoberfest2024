@@ -6,6 +6,7 @@ from networkx import astar_path
 from qibo import Circuit, models, gates
 
 import GraphUtils
+from challenges.qubit_mapping.src.GraphUtils import add_to_graph
 
 STAR_ARCHITECTURE: Dict[int, List[int]] = {0: [1, 2, 3, 4], 1: [0], 2: [0], 3: [0], 4: [0]}
 
@@ -77,16 +78,11 @@ class CircuitTranspiler:
             for gate in step:
                 if len(gate.qubits) < 2:
                     continue
-
-                if gate.qubits[0] in graph and len(graph[gate.qubits[0]]) < 2:
-                    graph[gate.qubits[0]].append(gate.qubits[1])
-                else:
-                    graph[gate.qubits[0]] = [gate.qubits[1]]
-
-                if gate.qubits[1] in graph and len(graph[gate.qubits[1]]) < 2:
-                    graph[gate.qubits[1]].append(gate.qubits[0])
-                else:
-                    graph[gate.qubits[1]] = [gate.qubits[0]]
+                if GraphUtils.is_pair_present(graph, gate.qubits[0], gate.qubits[1]):
+                    continue
+                if GraphUtils.get_node_edges(graph, gate.qubits[0]) >= 2 or GraphUtils.get_node_edges(graph, gate.qubits[1]) >= 2:
+                    continue
+                graph = GraphUtils.add_to_graph(graph, gate.qubits[0], gate.qubits[1])
 
         # Generate the list of qubits
         list_of_qubits = []

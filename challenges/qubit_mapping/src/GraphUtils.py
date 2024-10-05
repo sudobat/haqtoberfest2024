@@ -63,3 +63,25 @@ def get_next_subgraph(remaining_graph: Dict[int, List[int]], node: int) -> List[
 
     del remaining_graph[current_node]
     return subgraph
+
+def is_pair_present(graph: Dict[int, List[int]], node1: int, node2: int) -> bool:
+    return (node1 in graph.keys() and node2 in graph[node1]) and (node2 in graph.keys() and node1 in graph[node2])
+
+def get_node_edges(graph: Dict[int, List[int]], node: int) -> int:
+    if node in graph.keys():
+        return len(graph[node])
+    else:
+        return 0
+
+def add_to_graph(graph: Dict[int, List[int]], node1: int, node2: int) -> Dict[int, List[int]]:
+    if node1 in graph.keys():
+        graph[node1].append(node2)
+    else:
+        graph[node1] = [node2]
+
+    if node2 in graph.keys():
+        graph[node2].append(node1)
+    else:
+        graph[node2] = [node1]
+
+    return graph

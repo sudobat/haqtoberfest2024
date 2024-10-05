@@ -67,7 +67,7 @@ class TestCircuitTranspiler(unittest.TestCase):
         circuit_transpiler = CircuitTranspiler()
         mapping = circuit_transpiler.initial_mapping(timesteps)
 
-        expected_mapping = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4}
+        expected_mapping = {2: 0, 0: 1, 4: 2, 1: 3, 3: 4}
 
         self.assertDictEqual(expected_mapping, mapping)
 
