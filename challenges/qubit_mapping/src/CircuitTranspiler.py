@@ -7,10 +7,13 @@ import networkx as nx
 
 import GraphUtils
 
-STAR_ARCHITECTURE: List[Tuple] = [
-    (0,1),(0,2),(0,3),(0,4),
-    (1,0),(2,0),(3,0),(4,0)
-]
+STAR_ARCHITECTURE: Dict[int, List[int]] = {
+    0: [1, 2, 3, 4],
+    1: [0],
+    2: [0],
+    3: [0],
+    4: [0]
+}
 
 class CircuitTranspiler:
     def __init__(self, circuit: models.Circuit, topology: dict[int, list[int]]):
@@ -100,9 +103,15 @@ class CircuitTranspiler:
             list_of_qubits.append(next_qubit)
             next_qubit = graph[first_qubit][0]
 
-        # Map the list of qubits to the architecture nodes
+        # Create subgraphs from highest degree node
+        subgraphs: List[int] = GraphUtils.get_subgraphs(architecture)
 
-        return {}
+        # Map the list of qubits to the architecture nodes
+        mapping = {}
+        for qubit in list_of_qubits:
+            mapping[qubit] = subgraphs.pop(0)
+
+        return mapping
 
     def routing(self, timesteps: List[List[Tuple[int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
         """
