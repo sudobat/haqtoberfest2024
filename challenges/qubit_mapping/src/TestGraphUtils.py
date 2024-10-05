@@ -78,5 +78,12 @@ class TestCircuitTranspiler(unittest.TestCase):
             3: [2],
             4: [2]
         }
-        self.assertListEqual([2,1,0,3,4], get_subgraphs(t_architecture))
-        
+
+        star_architecture: Dict[int, List[int]] = {
+            0: [2],
+            1: [2],
+            2: [0,1,3,4],
+            3: [2],
+            4: [2]
+        }
+        self.assertListEqual([2,0,1,3,4], get_subgraphs(star_architecture))
