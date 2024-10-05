@@ -75,5 +75,3 @@ class TestCircuitTranspiler(unittest.TestCase):
         }
 
         self.assertDictEqual(expected_mapping, mapping)
-
-

@@ -78,6 +78,9 @@ class CircuitTranspiler:
         # Generate the graph containing connections from each qubit.
         for step in timesteps:
             for gate in step:
+                if len(gate.qubits) < 2:
+                    continue
+
                 if gate.qubits[0] in graph and len(graph[gate.qubits[0]]) < 2:
                     graph[gate.qubits[0]].append(gate.qubits[1])
                 else:
@@ -96,7 +99,7 @@ class CircuitTranspiler:
         next_qubit = graph[first_qubit][0]
         while next_qubit is not None and next_qubit is not first_qubit:
             list_of_qubits.append(next_qubit)
-            next_qubit = graph[first_qubit][0]
+            next_qubit = graph[next_qubit][0]
 
         # Create subgraphs from highest degree node
         subgraphs: List[int] = GraphUtils.get_subgraphs(architecture)
