@@ -24,7 +24,19 @@ class CircuitTranspiler:
         timesteps (list): list of timesteps with the qubits involved in each timestep
         """
         # your code here
-        return []
+        timesteps: List[List[Tuple[int, int]]] = [
+            [(2,0), (3,1)],
+            [(0,), (1,)],
+            [(1,4), (0,2), (3,)],
+            [(4,1), (2,)],
+            [(1,3), (0,)],
+            [(0,4), (2,3)],
+            [(4,)],
+            [(4,0), (1,2)],
+            [(0,), (2,), (3,4)],
+            [(3,2)]
+        ]
+        return timesteps
 
     def initial_mapping(timesteps: List[List[Tuple[int, int]]]) -> Dict[int, int]:
         """
