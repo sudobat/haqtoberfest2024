@@ -3,8 +3,11 @@ from typing import List, Tuple, Dict
 
 from networkx import astar_path
 from qibo import Circuit, models, gates
-from collections import deque
 import networkx as nx
+
+import GraphUtils
+
+STAR_ARCHITECTURE: Dict[int, List[int]] = {0: [1, 2, 3, 4], 1: [0], 2: [0], 3: [0], 4: [0]}
 
 
 class CircuitTranspiler:
@@ -47,6 +50,42 @@ class CircuitTranspiler:
         """
         # your code here
         return {}
+
+        architecture = STAR_ARCHITECTURE
+        graph: Dict[int, List[int]] = {}
+
+        # Generate the graph containing connections from each qubit.
+        for step in timesteps:
+            for gate in step:
+                if gate[1] in graph and len(graph[gate[1]]) < 2:
+                    graph[gate[1]].append(gate[2])
+                else:
+                    graph[gate[1]] = [gate[2]]
+
+                if gate[2] in graph and len(graph[gate[2]]) < 2:
+                    graph[gate[2]].append(gate[1])
+                else:
+                    graph[gate[2]] = [gate[1]]
+
+        # Generate the list of qubits
+        list_of_qubits = []
+        first_qubit = list(graph.keys())[0]
+
+        list_of_qubits.append(first_qubit)
+        next_qubit = graph[first_qubit][0]
+        while next_qubit is not None and next_qubit is not first_qubit:
+            list_of_qubits.append(next_qubit)
+            next_qubit = graph[first_qubit][0]
+
+        # Create subgraphs from highest degree node
+        subgraphs: List[int] = GraphUtils.get_subgraphs(architecture)
+
+        # Map the list of qubits to the architecture nodes
+        mapping = {}
+        for qubit in list_of_qubits:
+            mapping[qubit] = subgraphs.pop(0)
+
+        return mapping
 
     def routing(self, timesteps: List[List[Tuple[int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
         """
