@@ -55,13 +55,35 @@ class CircuitTranspiler:
         Returns:
         dict: dictionary with the initial mapping of virtual qubits (referred to as qubits) to physical qubits (referred to as nodes)
         """
-        # your code here
-        architecture = STAR_ARCHITECTURE
-        graph: List[Tuple[int, int]] = []
 
+        architecture = STAR_ARCHITECTURE
+        graph: Dict[int, List[int]] = {}
+
+        # Generate the graph containing connections from each qubit.
         for step in timesteps:
             for gate in step:
-                GraphUtils.is_pair_present_in_graph()
+                if gate[1] in graph and len(graph[gate[1]]) < 2:
+                    graph[gate[1]].append(gate[2])
+                else:
+                    graph[gate[1]] = [gate[2]]
+
+                if gate[2] in graph and len(graph[gate[2]]) < 2:
+                    graph[gate[2]].append(gate[1])
+                else:
+                    graph[gate[2]] = [gate[1]]
+
+        # Generate the list of qubits
+        list_of_qubits = []
+        first_qubit = list(graph.keys())[0]
+
+        list_of_qubits.append(first_qubit)
+        next_qubit = graph[first_qubit][0]
+        while next_qubit is not None and next_qubit is not first_qubit:
+            list_of_qubits.append(next_qubit)
+            next_qubit = graph[first_qubit][0]
+
+        # Map the list of qubits to the architecture nodes
+
         return {}
 
     def routing(timesteps: List[List[Tuple[str, int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
