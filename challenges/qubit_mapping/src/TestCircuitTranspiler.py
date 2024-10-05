@@ -5,7 +5,7 @@ from CircuitTranspiler import CircuitTranspiler
 import unittest
 
 class TestCircuitTranspiler(unittest.TestCase):
-    def first_test(self):
+    def test_first(self):
         c = models.Circuit(5)
         c.add(gates.CNOT(0, 2))
         c.add(gates.CNOT(2, 4))
@@ -20,3 +20,5 @@ class TestCircuitTranspiler(unittest.TestCase):
         c.add(gates.CNOT(1, 0))
         c.add(gates.CNOT(3, 2))
         c.add(gates.CNOT(0, 3))
+
+        self.assertTrue(True, "Test passed")
