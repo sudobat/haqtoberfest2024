@@ -2,7 +2,6 @@ from qibo import gates, models
 import unittest
 from CircuitTranspiler import CircuitTranspiler
 
-
 class TestCircuitTranspiler(unittest.TestCase):
 
     def test_generate_timesteps(self):
@@ -47,4 +46,5 @@ class TestCircuitTranspiler(unittest.TestCase):
         self.assertListEqual(expected_timesteps, generated_circuit)
 
     def test_initial_mapping(self):
+        pass
 

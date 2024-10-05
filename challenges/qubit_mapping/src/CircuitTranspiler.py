@@ -3,7 +3,6 @@ from typing import List, Tuple, Dict
 
 from networkx import astar_path
 from qibo import Circuit, models, gates
-import networkx as nx
 
 import GraphUtils
 
@@ -16,11 +15,6 @@ STAR_ARCHITECTURE: Dict[int, List[int]] = {
 }
 
 class CircuitTranspiler:
-    def __init__(self, circuit: models.Circuit, topology: dict[int, list[int]]):
-        self.circuit = circuit
-        self.topology_graph = nx.Graph(dict_topology_tolist(topology))
-        self.output_circuit = models.Circuit(self.circuit.nqubits)
-        self.mapping = {i: i for i in range(self.circuit.nqubits)}
 
     def transpile(self, circuit: models.Circuit) -> Circuit:
         timesteps = self.generate_timesteps(circuit)
