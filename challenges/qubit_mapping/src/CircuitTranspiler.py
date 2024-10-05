@@ -123,13 +123,13 @@ class CircuitTranspiler:
         # Run over all timesteps and gates in the timesteps
         output_circuit = Circuit(len(initial_mapping.keys()))
         topology_graph = nx.Graph(dict_topology_tolist(STAR_ARCHITECTURE))
-        
+
         for timestep in timesteps:
             for gate in timestep:
 
                 # If the gate is a single qubit gate, add it to the output circuit following the mapping
                 if len(gate.qubits) == 1:
-                    output_circuit.add(string_gate(gate.name, initial_mapping[gate.qubits[0]]))
+                    output_circuit.add(string_gate(gate.name, (initial_mapping[gate.qubits[0]],)))
 
                 # If the gate is a two qubit gate, check if the qubits are connected in the topology
                 elif len(gate.qubits) == 2:
@@ -138,12 +138,14 @@ class CircuitTranspiler:
                             string_gate(gate.name, (initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]]))
                         )
                     else:
-                        path = astar_path(topology_graph, initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]])
+                        path = astar_path(
+                            topology_graph, initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]]
+                        )
 
                         for i in range(len(path) - 1):
-                            output_circuit.add(string_gate("cx", (path[i], path[i + 1])))
-                            output_circuit.add(string_gate("cx", (path[i + 1], path[i])))
-                            output_circuit.add(string_gate("cx", (path[i], path[i + 1])))
+                            output_circuit.add(gates.CNOT(path[i], path[i + 1]))
+                            output_circuit.add(gates.CNOT(path[i + 1], path[i]))
+                            output_circuit.add(gates.CNOT(path[i], path[i + 1]))
 
                         initial_mapping[gate.qubits[1]] = gate.qubits[0]
                         initial_mapping[gate.qubits[0]] = gate.qubits[1]
@@ -187,7 +189,7 @@ class CircuitTranspiler:
         return circuit
 
 
-def string_gate(name: str, qubits: int | tuple[int, int]) -> gates.Gate:
+def string_gate(name: str, qubits: tuple[int]) -> gates.Gate:
     """Converts a tuple representation of a get as (name, qubits) into a Gate object.
 
     Args:
@@ -204,9 +206,9 @@ def string_gate(name: str, qubits: int | tuple[int, int]) -> gates.Gate:
     if name == "cx":
         return gates.CNOT(*qubits)
     elif name == "x":
-        return gates.X(qubits)
+        return gates.X(qubits[0])
     elif name == "h":
-        return gates.H(qubits)
+        return gates.H(qubits[0])
     else:
         raise ValueError(f"Gate {name} not supported")
 
