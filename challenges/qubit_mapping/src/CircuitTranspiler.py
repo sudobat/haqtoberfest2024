@@ -1,8 +1,13 @@
 # We assume non-directed star topology and that the qubit 2 is the center of the star
 from typing import List, Tuple, Dict
 
+import qibo.gates
 from qibo import Circuit, models
 
+STAR_ARCHITECTURE: List[Tuple] = [
+    (0,1),(0,2),(0,3),(0,4),
+    (1,0),(2,0),(3,0),(4,0)
+]
 
 class CircuitTranspiler:
     def transpile(self, circuit: models.Circuit) -> Circuit:
@@ -13,7 +18,7 @@ class CircuitTranspiler:
 
         return optimized_circuit
 
-    def generate_timesteps(circuit: models.Circuit) -> List[List[Tuple[int, int]]]:
+    def generate_timesteps(circuit: models.Circuit) -> List[List[Tuple[str, int, int]]]:
         """
         Function to determine the timesteps of a given circuit
 
@@ -24,21 +29,21 @@ class CircuitTranspiler:
         timesteps (list): list of timesteps with the qubits involved in each timestep
         """
         # your code here
-        timesteps: List[List[Tuple[int, int]]] = [
-            [(2,0), (3,1)],
-            [(0,), (1,)],
-            [(1,4), (0,2), (3,)],
-            [(4,1), (2,)],
-            [(1,3), (0,)],
-            [(0,4), (2,3)],
-            [(4,)],
-            [(4,0), (1,2)],
-            [(0,), (2,), (3,4)],
-            [(3,2)]
+        timesteps: List[List[Tuple[str, int, int]]] = [
+            [('CNOT',2,0), ('CNOT',3,1)],
+            [('X',0,), ('H',1,)],
+            [('CNOT',1,4), ('CNOT',0,2), ('H',3,)],
+            [('CNOT',4,1), ('X',2,)],
+            [('CNOT',1,3), ('H',0,)],
+            [('CNOT',0,4), ('CNOT',2,3)],
+            [('X',4,)],
+            [('CNOT',4,0), ('CNOT',1,2)],
+            [('H',0,), ('H',2,), ('CNOT',3,4)],
+            [('CNOT',3,2)]
         ]
         return timesteps
 
-    def initial_mapping(timesteps: List[List[Tuple[int, int]]]) -> Dict[int, int]:
+    def initial_mapping(timesteps: List[List[Tuple[str, int, int]]]) -> Dict[int, int]:
         """
         Function to determine the initial mapping of the qubits to the architecture.
 
@@ -49,9 +54,15 @@ class CircuitTranspiler:
         dict: dictionary with the initial mapping of virtual qubits (referred to as qubits) to physical qubits (referred to as nodes)
         """
         # your code here
+        architecture = STAR_ARCHITECTURE
+        graph: List[Tuple[int, int]] = []
+
+        for step in timesteps:
+            for gate in step:
+
         return {}
 
-    def routing(timesteps: List[List[Tuple[int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
+    def routing(timesteps: List[List[Tuple[str, int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
         """
         Function that takes as input the timesteps and the initial mapping and outputs the final circuit.
 
