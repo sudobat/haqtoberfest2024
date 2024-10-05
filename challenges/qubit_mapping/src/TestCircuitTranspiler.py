@@ -47,3 +47,4 @@ class TestCircuitTranspiler(unittest.TestCase):
         self.assertListEqual(expected_timesteps, generated_circuit)
 
     def test_initial_mapping(self):
+

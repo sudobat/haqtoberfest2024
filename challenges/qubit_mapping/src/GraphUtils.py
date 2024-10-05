@@ -42,7 +42,7 @@ def get_subgraphs(graph: Dict[int, List[int]]) -> List[int]:
 
     starting_node = get_highest_degree_node(new_graph)
     while starting_node != -1:
-        subgraph = get_next_subgraph(new_graph)
+        subgraph = get_next_subgraph(new_graph, starting_node)
         subgraphs.extend(subgraph)
         starting_node = get_highest_degree_node(new_graph)
 
