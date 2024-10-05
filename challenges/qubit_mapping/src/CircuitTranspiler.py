@@ -99,7 +99,15 @@ class CircuitTranspiler:
         next_qubit = graph[first_qubit][0]
         while next_qubit is not None and next_qubit is not first_qubit:
             list_of_qubits.append(next_qubit)
-            next_qubit = graph[next_qubit][0]
+            found = False
+            for qubit in graph[next_qubit]:
+                if qubit not in list_of_qubits:
+                    next_qubit = qubit
+                    found = True
+                    break
+
+            if not found:
+                next_qubit = None
 
         # Create subgraphs from highest degree node
         subgraphs: List[int] = GraphUtils.get_subgraphs(architecture)
