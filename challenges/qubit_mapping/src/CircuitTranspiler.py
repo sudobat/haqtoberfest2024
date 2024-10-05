@@ -5,14 +5,13 @@ from qibo import Circuit, models
 
 
 class CircuitTranspiler:
-    def __init__(self, circuit):
-        self._circuit = circuit
+    def transpile(self, circuit: models.Circuit) -> Circuit:
+        timesteps = self.generate_timesteps(circuit)
+        mapping = self.initial_mapping(timesteps)
+        non_optimized_circuit = self.routing(timesteps, mapping)
+        optimized_circuit = self.optimize_circuit(non_optimized_circuit)
 
-    def transpile(self) -> Circuit:
-        self._adapt()
-        self._optimize()
-
-        return models.Circuit(5)
+        return optimized_circuit
 
     def generate_timesteps(circuit: models.Circuit) -> List[List[Tuple[int, int]]]:
         """
@@ -25,7 +24,7 @@ class CircuitTranspiler:
         timesteps (list): list of timesteps with the qubits involved in each timestep
         """
         # your code here
-        return None
+        return []
 
     def initial_mapping(timesteps: List[List[Tuple[int, int]]]) -> Dict[int, int]:
         """
@@ -38,7 +37,7 @@ class CircuitTranspiler:
         dict: dictionary with the initial mapping of virtual qubits (referred to as qubits) to physical qubits (referred to as nodes)
         """
         # your code here
-        return None
+        return {}
 
     def routing(timesteps: List[List[Tuple[int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
         """
@@ -54,7 +53,7 @@ class CircuitTranspiler:
         Returns:
         models.Circuit: A Qibo circuit object representing the final quantum circuit after applying the routing algorithm.
         """
-        return None
+        return models.Circuit(5)
 
     def optimize_circuit(circuit: models.Circuit) -> models.Circuit:
         """
@@ -66,4 +65,4 @@ class CircuitTranspiler:
         Returns:
         models.Circuit: The optimized circuit.
         """
-        return None
+        return circuit
