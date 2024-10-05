@@ -102,6 +102,29 @@ class CircuitTranspiler:
         Returns:
         models.Circuit: The optimized circuit.
         """
+
+        output_circuit = models.Circuit(circuit.nqubits)
+        circ = circuit.copy()
+
+        num_list = circ.ngates
+
+        # last_qubit_gate = {}
+        # for i, gate in enumerate(circ.queue):
+        #     if last_qubit_gate[gate.qubits[0]] != gate:
+        #         last_qubit_gate[gate.qubits[0]] = gate
+        #         output_circuit.add(gate)
+        #     else:
+
+        for i, gate in enumerate(circ.queue):
+            for j in range(i + 1, len(circ.queue)):
+                comp = circ.queue[j]
+                if any(x == y for x, y in zip(gate[1], comp[1])):
+                    if gate == comp:
+                        break
+                    else:
+                        output_circuit.add(gates.CNOT(*gate))
+                        break
+
         return circuit
 
 
