@@ -4,6 +4,8 @@ from typing import List, Tuple, Dict
 import qibo.gates
 from qibo import Circuit, models
 
+import GraphUtils
+
 STAR_ARCHITECTURE: List[Tuple] = [
     (0,1),(0,2),(0,3),(0,4),
     (1,0),(2,0),(3,0),(4,0)
@@ -59,7 +61,7 @@ class CircuitTranspiler:
 
         for step in timesteps:
             for gate in step:
-
+                GraphUtils.is_pair_present_in_graph()
         return {}
 
     def routing(timesteps: List[List[Tuple[str, int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
