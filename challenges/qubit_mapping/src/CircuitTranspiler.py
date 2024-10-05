@@ -125,10 +125,11 @@ class CircuitTranspiler:
         Returns:
         models.Circuit: A Qibo circuit object representing the final quantum circuit after applying the routing algorithm.
         """
-        # (name, (qubit1, qubit2))
-        # Run over all timesteps and gates in the timesteps
+
         output_circuit = Circuit(len(initial_mapping.keys()))
         topology_graph = nx.Graph(dict_topology_tolist(STAR_ARCHITECTURE))
+
+        nx.draw(topology_graph, with_labels=True, font_weight="bold")
 
         for timestep in timesteps:
             for gate in timestep:
@@ -153,11 +154,13 @@ class CircuitTranspiler:
                             output_circuit.add(gates.CNOT(path[i + 1], path[i]))
                             output_circuit.add(gates.CNOT(path[i], path[i + 1]))
 
-                        initial_mapping[gate.qubits[1]] = gate.qubits[0]
-                        initial_mapping[gate.qubits[0]] = gate.qubits[1]
+                        cache = initial_mapping[path[1]]
+                        initial_mapping[path[1]] = initial_mapping[path[-1]]
+                        initial_mapping[path[-1]] = cache
 
-                        output_circuit.add(string_gate(gate.name, (path[-1], initial_mapping[gate.qubits[0]])))
-
+                        output_circuit.add(
+                            string_gate(gate.name, (initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]]))
+                        )
         return output_circuit
 
     def optimize_circuit(self, circuit: models.Circuit) -> models.Circuit:
@@ -201,7 +204,7 @@ def string_gate(name: str, qubits: tuple[int]) -> gates.Gate:
         gates.Gate: The qibo Gate object.
     """
     if name == "cx":
-        return gates.CNOT(*qubits)
+        return gates.CNOT(qubits[0], qubits[1])
     elif name == "x":
         return gates.X(qubits[0])
     elif name == "h":
