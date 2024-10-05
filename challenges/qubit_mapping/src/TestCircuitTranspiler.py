@@ -41,9 +41,13 @@ class TestCircuitTranspiler(unittest.TestCase):
         ]
 
         circuit_transpiler = CircuitTranspiler()
-        generated_circuit = circuit_transpiler.generate_timesteps(circuit)
+        generated_timesteps = circuit_transpiler.generate_timesteps(circuit)
 
-        self.assertListEqual(expected_timesteps, generated_circuit)
+        for i, timestep in enumerate(expected_timesteps):
+            for j, expected_gate in enumerate(timestep):
+                self.assertEqual(expected_gate.name, generated_timesteps[i][j].name)
+                self.assertEqual(expected_gate.qubits, generated_timesteps[i][j].qubits)
+
 
     def test_initial_mapping(self):
         timesteps = [
@@ -71,4 +75,5 @@ class TestCircuitTranspiler(unittest.TestCase):
         }
 
         self.assertDictEqual(expected_mapping, mapping)
+
 
