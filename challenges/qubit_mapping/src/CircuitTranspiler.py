@@ -1,9 +1,6 @@
 # We assume non-directed star topology and that the qubit 2 is the center of the star
 from typing import List, Tuple, Dict
-
-import qibo.gates
-from networkx.classes import neighbors
-from qibo import Circuit, models
+from qibo import Circuit, models, gates
 
 import GraphUtils
 
@@ -24,7 +21,7 @@ class CircuitTranspiler:
 
         return optimized_circuit
 
-    def generate_timesteps(circuit: models.Circuit) -> List[List[Tuple[str, int, int]]]:
+    def generate_timesteps(self, circuit: models.Circuit) -> List[List[Tuple[str, Tuple[int, int]]]]:
         """
         Function to determine the timesteps of a given circuit
 
@@ -34,22 +31,33 @@ class CircuitTranspiler:
         Returns:
         timesteps (list): list of timesteps with the qubits involved in each timestep
         """
-        # your code here
-        timesteps: List[List[Tuple[str, int, int]]] = [
-            [('CNOT',2,0), ('CNOT',3,1)],
-            [('X',0,), ('H',1,)],
-            [('CNOT',1,4), ('CNOT',0,2), ('H',3,)],
-            [('CNOT',4,1), ('X',2,)],
-            [('CNOT',1,3), ('H',0,)],
-            [('CNOT',0,4), ('CNOT',2,3)],
-            [('X',4,)],
-            [('CNOT',4,0), ('CNOT',1,2)],
-            [('H',0,), ('H',2,), ('CNOT',3,4)],
-            [('CNOT',3,2)]
-        ]
+
+        circuit_gates: List[gates.Gate] = circuit.queue
+
+        # (name, (qubit1, [qubit2]))
+        timesteps: List[List[Tuple[str, Tuple[int, int]]]] = []
+        current_timestep: List[Tuple[str, Tuple[int, int]]] = []
+
+        qubits_used_in_current_timestep = []
+
+        for gate in circuit_gates:
+            if gate.qubits[0] in qubits_used_in_current_timestep or (len(gate.qubits) > 1 and gate.qubits[1] in qubits_used_in_current_timestep):
+                timesteps.append(current_timestep.copy())
+                current_timestep = [(gate.name, gate.qubits)]
+                qubits_used_in_current_timestep = [gate.qubits[0]]
+                if len(gate.qubits) > 1:
+                    qubits_used_in_current_timestep.append(gate.qubits[1])
+            else:
+                current_timestep.append((gate.name, gate.qubits))
+                qubits_used_in_current_timestep.append(gate.qubits[0])
+                if len(gate.qubits) > 1:
+                    qubits_used_in_current_timestep.append(gate.qubits[1])
+
+        timesteps.append(current_timestep.copy())
+
         return timesteps
 
-    def initial_mapping(timesteps: List[List[Tuple[str, int, int]]]) -> Dict[int, int]:
+    def initial_mapping(self, timesteps: List[List[Tuple[str, int, int]]]) -> Dict[int, int]:
         """
         Function to determine the initial mapping of the qubits to the architecture.
 
@@ -96,7 +104,7 @@ class CircuitTranspiler:
 
         return mapping
 
-    def routing(timesteps: List[List[Tuple[str, int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
+    def routing(self, timesteps: List[List[Tuple[str, int, int]]], initial_mapping: Dict[int, int]) -> models.Circuit:
         """
         Function that takes as input the timesteps and the initial mapping and outputs the final circuit.
 
@@ -112,7 +120,7 @@ class CircuitTranspiler:
         """
         return models.Circuit(5)
 
-    def optimize_circuit(circuit: models.Circuit) -> models.Circuit:
+    def optimize_circuit(self, circuit: models.Circuit) -> models.Circuit:
         """
         Function that takes as input the circuit and outputs the optimized circuit
 
