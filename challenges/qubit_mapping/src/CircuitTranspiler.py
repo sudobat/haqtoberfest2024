@@ -1,12 +1,14 @@
 # We assume non-directed star topology and that the qubit 2 is the center of the star
-from typing import List, Tuple, Dict
+from typing import List, Mapping, Tuple, Dict
 
 import networkx as nx
 from networkx import astar_path
+from numpy import sort
 from qibo import Circuit, models, gates
 
-import GraphUtils
-from challenges.qubit_mapping.src.GraphUtils import add_to_graph
+from GraphUtils import add_to_graph
+
+# from challenges.qubit_mapping.src.GraphUtils import add_to_graph
 
 STAR_ARCHITECTURE: Dict[int, List[int]] = {0: [1, 2, 3, 4], 1: [0], 2: [0], 3: [0], 4: [0]}
 
@@ -80,7 +82,10 @@ class CircuitTranspiler:
                     continue
                 if GraphUtils.is_pair_present(graph, gate.qubits[0], gate.qubits[1]):
                     continue
-                if GraphUtils.get_node_edges(graph, gate.qubits[0]) >= 2 or GraphUtils.get_node_edges(graph, gate.qubits[1]) >= 2:
+                if (
+                    GraphUtils.get_node_edges(graph, gate.qubits[0]) >= 2
+                    or GraphUtils.get_node_edges(graph, gate.qubits[1]) >= 2
+                ):
                     continue
                 graph = GraphUtils.add_to_graph(graph, gate.qubits[0], gate.qubits[1])
 
@@ -112,7 +117,9 @@ class CircuitTranspiler:
 
         return mapping
 
-    def routing(self, timesteps: List[List[gates.Gate]], initial_mapping: Dict[int, int]) -> models.Circuit:
+    def routing(
+        self, circuit: models.Circuit, initial_mapping: Dict[int, int], architecture=dict[int, list[int]]
+    ) -> models.Circuit:
         """
         Function that takes as input the timesteps and the initial mapping and outputs the final circuit.
 
@@ -127,42 +134,48 @@ class CircuitTranspiler:
         models.Circuit: A Qibo circuit object representing the final quantum circuit after applying the routing algorithm.
         """
 
+        mapping = initial_mapping.copy()
         output_circuit = Circuit(len(initial_mapping.keys()))
-        topology_graph = nx.Graph(dict_topology_tolist(STAR_ARCHITECTURE))
+        topology_graph = nx.Graph(dict_topology_tolist(architecture))
+        # print(list(topology_graph.edges))
 
-        nx.draw(topology_graph, with_labels=True, font_weight="bold")
+        for gate in circuit.queue:
 
-        for timestep in timesteps:
-            for gate in timestep:
+            # If the gate is a single qubit gate, add it to the output circuit following the mapping
+            if len(gate.qubits) == 1:
+                output_circuit.add(string_gate(gate.name, (mapping[gate.qubits[0]],)))
 
-                # If the gate is a single qubit gate, add it to the output circuit following the mapping
-                if len(gate.qubits) == 1:
-                    output_circuit.add(string_gate(gate.name, (initial_mapping[gate.qubits[0]],)))
+            # If the gate is a two qubit gate, check if the qubits are connected in the topology
+            elif len(gate.qubits) == 2:
 
-                # If the gate is a two qubit gate, check if the qubits are connected in the topology
-                elif len(gate.qubits) == 2:
-                    if (initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]]) in list(topology_graph.edges):
-                        output_circuit.add(
-                            string_gate(gate.name, (initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]]))
-                        )
-                    else:
-                        path = astar_path(
-                            topology_graph, initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]]
-                        )
+                # If the qubits are connected, add the gate to the output circuit following the mapping
+                mapped_qubit_pair = tuple((mapping[gate.qubits[0]], mapping[gate.qubits[1]]))
 
-                        for i in range(len(path) - 1):
-                            output_circuit.add(gates.CNOT(path[i], path[i + 1]))
-                            output_circuit.add(gates.CNOT(path[i + 1], path[i]))
-                            output_circuit.add(gates.CNOT(path[i], path[i + 1]))
+                if (mapped_qubit_pair in list(topology_graph.edges)) or (
+                    mapped_qubit_pair[::-1] in list(topology_graph.edges)
+                ):
+                    output_circuit.add(string_gate(gate.name, (mapping[gate.qubits[0]], mapping[gate.qubits[1]])))
+                else:
+                    # If the qubits are not connected, find the shortest path between them and add SWAP gates
+                    # up the second to last qubit in the path. At each swap, update the mapping.
+                    path = astar_path(topology_graph, mapping[gate.qubits[0]], mapping[gate.qubits[1]])
 
-                        cache = initial_mapping[path[1]]
-                        initial_mapping[path[1]] = initial_mapping[path[-1]]
-                        initial_mapping[path[-1]] = cache
+                    for i in range(len(path) - 2):
 
-                        output_circuit.add(
-                            string_gate(gate.name, (initial_mapping[gate.qubits[0]], initial_mapping[gate.qubits[1]]))
-                        )
-        return output_circuit
+                        #     output_circuit.add(gates.CNOT(path[i], path[i + 1]))
+                        #     output_circuit.add(gates.CNOT(path[i + 1], path[i]))
+                        #     output_circuit.add(gates.CNOT(path[i], path[i + 1]))
+
+                        output_circuit.add(gates.SWAP(path[i], path[i + 1]))
+
+                        swap_cache = mapping[mapping[path[i]]]
+                        mapping[mapping[path[i]]] = mapping[mapping[path[i + 1]]]
+                        mapping[mapping[path[i + 1]]] = swap_cache
+
+                    # Add the original gate to the output circuit with the updated mapping
+                    output_circuit.add(string_gate(gate.name, (path[-2], mapping[gate.qubits[1]])))
+
+        return output_circuit, mapping, topology_graph
 
     def optimize_circuit(self, circuit: models.Circuit) -> models.Circuit:
         """
