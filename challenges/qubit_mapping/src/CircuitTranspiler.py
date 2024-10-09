@@ -36,7 +36,6 @@ class CircuitTranspiler:
 
         circuit_gates: List[gates.Gate] = circuit.queue
 
-        # (name, (qubit1, [qubit2]))
         timesteps: List[List[gates.Gate]] = []
         current_timestep: List[gates.Gate] = []
 
@@ -190,15 +189,6 @@ class CircuitTranspiler:
 
         output_circuit = models.Circuit(circuit.nqubits)
         circ = circuit.copy()
-
-        num_list = circ.ngates
-
-        # last_qubit_gate = {}
-        # for i, gate in enumerate(circ.queue):
-        #     if last_qubit_gate[gate.qubits[0]] != gate:
-        #         last_qubit_gate[gate.qubits[0]] = gate
-        #         output_circuit.add(gate)
-        #     else:
 
         for i, gate in enumerate(circ.queue):
             for j in range(i + 1, len(circ.queue)):
